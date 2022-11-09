@@ -227,7 +227,6 @@ impl Painter {
         for (id, image_delta) in &textures_delta.set {
             self.set_texture(*id, image_delta);
         }
-
         self.paint_primitives(pixels_per_point, clipped_primitives);
 
         for &id in &textures_delta.free {
@@ -243,15 +242,38 @@ impl Painter {
     ) {
         self.upload_user_textures();
 
+        // Need to turn off backface culling because egui doesn't use proper winding order
+        // let cull_on;
+        // let depth_on;
+        // let scissor_not_on;
+        // let blend_not_on;
+        // let srgb_not_on;
         unsafe {
+            // cull_on = gl::IsEnabled(gl::CULL_FACE) == gl::TRUE;
+            // depth_on = gl::IsEnabled(gl::DEPTH_TEST) == gl::TRUE;
+            // scissor_not_on = gl::IsEnabled(gl::SCISSOR_TEST) == gl::FALSE;
+            // blend_not_on = gl::IsEnabled(gl::BLEND) == gl::FALSE;
+            // srgb_not_on = gl::IsEnabled(gl::FRAMEBUFFER_SRGB) == gl::FALSE;
+            gl::Disable(gl::CULL_FACE);
+            gl::Disable(gl::DEPTH_TEST);
+            gl::Enable(gl::SCISSOR_TEST);
+            gl::Enable(gl::BLEND);
             //Let OpenGL know we are dealing with SRGB colors so that it
             //can do the blending correctly. Not setting the framebuffer
             //leads to darkened, oversaturated colors.
             gl::Enable(gl::FRAMEBUFFER_SRGB);
-
-            gl::Enable(gl::SCISSOR_TEST);
-            gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA); // premultiplied alpha
+        }
+
+        unsafe {
+            // //Let OpenGL know we are dealing with SRGB colors so that it
+            // //can do the blending correctly. Not setting the framebuffer
+            // //leads to darkened, oversaturated colors.
+            // gl::Enable(gl::FRAMEBUFFER_SRGB);
+            //
+            // gl::Enable(gl::SCISSOR_TEST);
+            // gl::Enable(gl::BLEND);
+            // gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA); // premultiplied alpha
             gl::UseProgram(self.program);
             gl::ActiveTexture(gl::TEXTURE0);
         }
@@ -299,6 +321,7 @@ impl Painter {
 
         unsafe {
             gl::Disable(gl::FRAMEBUFFER_SRGB);
+
         }
     }
 
